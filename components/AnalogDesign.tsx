@@ -141,7 +141,7 @@ const PuzzleVisualizer = () => {
         setPuzzleLevel(computeLevel(config));
         setIsPuzzleDisassemblable((completeDisassemblable(config))? "True": "False");
         setNumPiece(config.length);
-        console.log(config);
+        console.log(steps);
     }
     const moveState = move ? "stop" : "start";
 
@@ -154,12 +154,13 @@ const PuzzleVisualizer = () => {
     }
 
     useEffect(() => {
+        console.log(currentStepIndex, steps.length, move)
         const interval = setInterval(() => {
             if (move) setCurrentStepIndex((prevStepIndex) => Math.min((prevStepIndex + 1), steps.length - 1));
         }, 500);
 
         return () => clearInterval(interval);
-    }, [steps]);
+    }, [move, steps]);
 
     return (
         <div className='w-full h-full'>
