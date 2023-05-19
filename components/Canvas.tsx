@@ -88,7 +88,8 @@ const PuzzleVisualizer = () => {
         setMove(!move);
     }
 
-    const config = constructPiece(exampleConfigs[selectConfig], 1, 3, exampleConfigs[selectConfig][0].piece.Voxels.length).configuration;
+    //const config = constructPiece(exampleConfigs[selectConfig], 1, 3, exampleConfigs[selectConfig][0].piece.Voxels.length).configuration;
+    const config = exampleConfigs[selectConfig];
     const steps = (config.length > 1 && completeDisassemblable(config)) ? outputCompleteDisassemblePlan(config) : [config];
     console.log(config, steps)
     const puzzleLevel = computeLevel(config);

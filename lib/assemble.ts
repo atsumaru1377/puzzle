@@ -135,8 +135,6 @@ const getSubassemblies = (configuration: Configuration, maxPieces: number): Suba
     return subassemblies;
 };
 
-
-
 const removeSubassembly = (configuration:Configuration, subassembly:Subassembly):Configuration => {
     const removePieceIDs = new Set<number>(subassembly.map(piece => piece.ID));
     const newConfiguration:Configuration = [];
@@ -615,6 +613,7 @@ const completeDisassemblable = (configuration:Configuration): boolean => {
     }
     return false
 }
+
 export {
     isMovable,
     movePiece,
