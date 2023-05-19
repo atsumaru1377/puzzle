@@ -6,10 +6,11 @@ import getSeededRandomColor from '@/lib/getColor';
 import * as THREE from 'three';
 
 import Button from './Button';
-import { config1, config2, config3, config4, config5 } from '@/lib/testConfigs';
-import { CompleteDisassembly, OutputCompleteDisassemblePlan, computeLevel } from '@/lib/assemble';
+import { config1, config2, config3, config4, config5, config6, config7 } from '@/lib/testConfigs';
+import { completeDisassemblable, outputCompleteDisassemblePlan, computeLevel } from '@/lib/assemble';
 import DropdownList from './DropdownList';
 import { start } from 'repl';
+import { constructPiece } from '@/lib/design';
 
 type VoxelProps = {
     voxel: Voxel,
@@ -48,21 +49,23 @@ const PieceComponent = ({ piece }: PieceProps) => {
 
 const CameraSetup = () => {
     const { camera } = useThree();
-  
+
     useEffect(() => {
       camera.position.set(3, 3, 8);
       camera.lookAt(3, 3, 3);
     }, [camera]);
-  
+
     return null;
 };
 
 const exampleConfigs:{[key:string]:Configuration} = {
-    "config1":config1, 
+    "config1":config1,
     "config2":config2,
     "config3":config3,
     "config4":config4,
-    "config5":config5
+    "config5":config5,
+    "config6":config6,
+    "config7":config7
 }
 
 const labels = Object.keys(exampleConfigs);
@@ -70,7 +73,7 @@ const labels = Object.keys(exampleConfigs);
 const PuzzleVisualizer = () => {
     const [move, setMove] = useState(false)
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [selectConfig, setSelectConfig] = useState(labels[0]);
+    const [selectConfig, setSelectConfig] = useState(labels[5]);
 
     const onResetButtonClick = () => {
         setCurrentStepIndex(0);
@@ -85,10 +88,11 @@ const PuzzleVisualizer = () => {
         setMove(!move);
     }
 
-    const config = exampleConfigs[selectConfig];
-    const steps = OutputCompleteDisassemblePlan(config);
+    const config = constructPiece(exampleConfigs[selectConfig], 1, 3, exampleConfigs[selectConfig][0].piece.Voxels.length).configuration;
+    const steps = (config.length > 1 && completeDisassemblable(config)) ? outputCompleteDisassemblePlan(config) : [config];
+    console.log(config, steps)
     const puzzleLevel = computeLevel(config);
-    const isPuzzleDisassemblable = (CompleteDisassembly(config))? "True": "False";
+    const isPuzzleDisassemblable = (completeDisassemblable(config))? "True": "False";
     const numPiece = config.length;
 
     const moveState = move ? "stop" : "start";
@@ -96,7 +100,7 @@ const PuzzleVisualizer = () => {
     useEffect(() => {
         const interval = setInterval(() => {
             if (move) setCurrentStepIndex((prevStepIndex) => Math.min((prevStepIndex + 1), steps.length - 1));
-        }, 1000);
+        }, 500);
 
         return () => clearInterval(interval);
     }, [steps]);

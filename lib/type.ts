@@ -41,3 +41,8 @@ export type PuzzleUnderDesign = {
     pieces: Piece[],
     rest: Voxel[]
 }
+
+export type DirectionAndSeedVoxel = {
+    direction: Direction,
+    seed: Voxel
+}

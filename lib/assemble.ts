@@ -54,8 +54,20 @@ const isMovable = (configuration:Configuration, subassembly:Subassembly, directi
     const excludePieceIDs = new Set<number>(subassembly.map(piece => piece.ID));
     const occupiedVoxels = new Set<string>();
 
+    let two_dimentional = true
+    for (const {piece} of configuration) {
+        for (const voxel of piece.Voxels) {
+            if (voxel[2] != 0) {
+                two_dimentional = false;
+                break
+            }
+        }
+    }
+
     // 2D
-    if (direction%3 == 2) return false;
+    if (two_dimentional) {
+        if (direction%3 == 2) return false;
+    }
 
     if (excludePieceIDs.has(0)) return false;
 
@@ -99,7 +111,7 @@ function arePiecesAdjacent(piece1: Piece, piece2: Piece): boolean {
     return false;
 }
 
-  function hasAdjacentPieces(subassembly: Subassembly): boolean {
+function hasAdjacentPieces(subassembly: Subassembly): boolean {
     for (let i = 0; i < subassembly.length; i++) {
         for (let j = i + 1; j < subassembly.length; j++) {
             if (arePiecesAdjacent(subassembly[i], subassembly[j])) {
@@ -210,7 +222,7 @@ const computeNeighbor = (currentConfiguration:Configuration):Array<{ newConfigur
     return neighborConfigurations;
 }
 
-const KernelDisassembly = (initialConfiguration:Configuration):Graph => {
+const kernelDisassembly = (initialConfiguration:Configuration):Graph => {
     const graph:Graph = new Map();
     const visited:Set<string> = new Set();
     const queue = new Queue<Configuration>();
@@ -267,8 +279,65 @@ const KernelDisassembly = (initialConfiguration:Configuration):Graph => {
     return graph;
 }
 
+const kernelDisassemblable = (initialConfiguration:Configuration):boolean => {
+    const graph:Graph = new Map();
+    const visited:Set<string> = new Set();
+    const queue = new Queue<Configuration>();
+    const numPieces = initialConfiguration.length;
+    queue.enqueue(initialConfiguration);
+
+    while (!queue.isEmpty()) {
+        const currentConfiguration = queue.dequeue()!;
+        const currentConfigurationID = configurationToString(currentConfiguration);
+
+        if (visited.has(currentConfigurationID)) {
+            continue;
+        } else {
+            visited.add(currentConfigurationID);
+        }
+        if (currentConfiguration.length != numPieces) {
+            graph.set(
+                currentConfigurationID,
+                { configuration:currentConfiguration, target: true, edges: []}
+            )
+            return true;
+        }
+
+        const newConfigurations = computeNeighbor(currentConfiguration);
+
+        const graphNode:GraphNode = {
+            configuration: currentConfiguration,
+            target: false,
+            edges: []
+        };
+
+        let kernelDisassembled = false;
+
+        for (const {newConfiguration, operation} of newConfigurations) {
+            if (newConfiguration.length != numPieces) {
+                const newConfigurationID = configurationToString(newConfiguration);
+                if (!visited.has(newConfigurationID)) queue.enqueue(newConfiguration);
+                graphNode.edges = [{operation:operation,destination:newConfigurationID}];
+                graph.set(currentConfigurationID,graphNode);
+                kernelDisassembled = true;
+                break
+            }
+        }
+
+        if (!kernelDisassembled) {
+            for (const {newConfiguration, operation} of newConfigurations) {
+                const newConfigurationID = configurationToString(newConfiguration);
+                if (!visited.has(newConfigurationID)) queue.enqueue(newConfiguration);
+                graphNode.edges.push({operation:operation,destination:newConfigurationID});
+            }
+            graph.set(currentConfigurationID,graphNode);
+        }
+    }
+    return false;
+}
+
 const computeLevel = (initialConfiguration:Configuration):number => {
-    const graph = KernelDisassembly(initialConfiguration);
+    const graph = kernelDisassembly(initialConfiguration);
 
     const depths:Map<string, number> = new Map();
     const unvisited: Set<string> = new Set(graph.keys());
@@ -322,7 +391,7 @@ const computeLevel = (initialConfiguration:Configuration):number => {
     return -1;
 }
 
-const OutputDisassemblePlan = (graph: Graph, initialConfiguration: Configuration): Configuration[] => {
+const outputDisassemblePlan = (graph: Graph, initialConfiguration: Configuration): Configuration[] => {
     if (initialConfiguration.length < 2) return [];
     const depths: Map<string, number> = new Map();
     const before: Map<string, string> = new Map();
@@ -399,7 +468,7 @@ const OutputDisassemblePlan = (graph: Graph, initialConfiguration: Configuration
     return [];
 };
 
-const OutputCompleteDisassemblePlan = (configuration:Configuration):Configuration[] => {
+const outputCompleteDisassemblePlan = (configuration:Configuration):Configuration[] => {
     const graph:Graph = new Map();
     const visited:Set<string> = new Set();
     const queue = new Queue<Configuration>();
@@ -447,18 +516,18 @@ const OutputCompleteDisassemblePlan = (configuration:Configuration):Configuratio
 
                 const removedSubassemblyConfiguration:Configuration = getRemovedSubassembly(currentConfiguration,operation.pieces);
 
-                const removedSubassemblyDisassemble = CompleteDisassembly(removedSubassemblyConfiguration);
-                const restSubassemblyDisassemble = CompleteDisassembly(newConfiguration);
+                const removedSubassemblyDisassemble = completeDisassemblable(removedSubassemblyConfiguration);
+                const restSubassemblyDisassemble = completeDisassemblable(newConfiguration);
                 if (removedSubassemblyDisassemble && restSubassemblyDisassemble) {
-                    const removedSubassemblyPlan = OutputCompleteDisassemblePlan(removedSubassemblyConfiguration);
-                    const restSubassemblyPlan = OutputCompleteDisassemblePlan(newConfiguration);
+                    const removedSubassemblyPlan = outputCompleteDisassemblePlan(removedSubassemblyConfiguration);
+                    const restSubassemblyPlan = outputCompleteDisassemblePlan(newConfiguration);
                     const newGraphNode:GraphNode = {
                         configuration: newConfiguration,
                         target: true,
                         edges: []
                     }
                     graph.set(newConfigurationID,newGraphNode);
-                    const currentSubassemblyPlan = OutputDisassemblePlan(graph, configuration);
+                    const currentSubassemblyPlan = outputDisassemblePlan(graph, configuration);
                     return [
                         ...currentSubassemblyPlan,
                         ...[newConfiguration],
@@ -478,10 +547,10 @@ const OutputCompleteDisassemblePlan = (configuration:Configuration):Configuratio
             graph.set(currentConfigurationID,graphNode);
         }
     }
-    return [configuration]
+    return []
 }
 
-const CompleteDisassembly = (configuration:Configuration): boolean => {
+const completeDisassemblable = (configuration:Configuration): boolean => {
     const graph:Graph = new Map();
     const visited:Set<string> = new Set();
     const queue = new Queue<Configuration>();
@@ -529,8 +598,8 @@ const CompleteDisassembly = (configuration:Configuration): boolean => {
 
                 const removedSubassemblyConfiguration:Configuration = getRemovedSubassembly(currentConfiguration,operation.pieces);
 
-                const removedSubassemblyDisassemble = CompleteDisassembly(removedSubassemblyConfiguration);
-                const restSubassemblyDisassemble = CompleteDisassembly(newConfiguration);
+                const removedSubassemblyDisassemble = completeDisassemblable(removedSubassemblyConfiguration);
+                const restSubassemblyDisassemble = completeDisassemblable(newConfiguration);
                 if (removedSubassemblyDisassemble && restSubassemblyDisassemble) return true;
             }
         }
@@ -547,9 +616,14 @@ const CompleteDisassembly = (configuration:Configuration): boolean => {
     return false
 }
 export {
+    isMovable,
+    movePiece,
+    configurationToString,
+    computeNeighbor,
     computeLevel,
-    KernelDisassembly,
-    CompleteDisassembly,
-    OutputDisassemblePlan,
-    OutputCompleteDisassemblePlan
+    kernelDisassembly,
+    kernelDisassemblable,
+    completeDisassemblable,
+    outputDisassemblePlan,
+    outputCompleteDisassemblePlan
 }
