@@ -28,6 +28,7 @@ type PuzzleProps = {
 const VoxelComponent = ({ voxel, color }: VoxelProps) => {
     const position = voxel;
     const size = 1;
+
     return (
         <Box position={position} args={[size, size, size]}>
             <meshStandardMaterial color={color} />

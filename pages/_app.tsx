@@ -1,6 +1,15 @@
 import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
+import MoveButton from '../components/MoveButton';
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <MoveButton />
+      <Component {...pageProps} />
+    </>
+  );
 }
+
+export default MyApp;
