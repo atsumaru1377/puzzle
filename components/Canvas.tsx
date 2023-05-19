@@ -74,7 +74,7 @@ const labels = Object.keys(exampleConfigs);
 const PuzzleVisualizer = () => {
     const [move, setMove] = useState(false)
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [selectConfig, setSelectConfig] = useState(labels[5]);
+    const [selectConfig, setSelectConfig] = useState(labels[0]);
 
     const onResetButtonClick = () => {
         setCurrentStepIndex(0);
